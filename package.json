@@ -1,0 +1,43 @@
+{
+  "name": "@quai/agent-sdk",
+  "version": "0.1.0",
+  "description": "High-level SDK for AI agents to send and receive Qi on the Quai network",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "quai",
+    "qi",
+    "agent",
+    "ai",
+    "payments",
+    "utxo",
+    "bip47",
+    "cryptocurrency"
+  ],
+  "author": "Quai Network",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dominant-strategies/qi-agent-sdk"
+  },
+  "dependencies": {
+    "quais": "^1.0.0-alpha.52"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.30",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
