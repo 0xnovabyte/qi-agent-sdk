@@ -16,6 +16,7 @@ import {
   SenderDiscoveredCallback,
   NETWORK_CONFIGS,
 } from './types';
+import { formatQi, parseQi, formatBalance, QI_UNITS } from './utils';
 
 /**
  * High-level wallet for AI agents to send and receive Qi
@@ -154,6 +155,7 @@ export class QiAgentWallet {
 
   /**
    * Get balance for a specific zone
+   * Returns balance in Qit (smallest unit). Use formatBalance() for display.
    */
   async getBalance(zone: Zone = this.config.defaultZone): Promise<ZoneBalance> {
     const outpoints = this.qiWallet.getOutpoints(zone);
@@ -162,8 +164,10 @@ export class QiAgentWallet {
     let lockedBalance = 0n;
     
     for (const outpoint of outpoints) {
-      // TODO: Check if outpoint is confirmed
-      balance += BigInt(outpoint.outpoint.denomination);
+      // Get the actual Qit value from the denomination index
+      const denomIndex = outpoint.outpoint.denomination;
+      const { denominations } = await import('quais');
+      balance += denominations[denomIndex] || 0n;
     }
 
     return {
@@ -172,6 +176,15 @@ export class QiAgentWallet {
       utxoCount: outpoints.length,
       lockedBalance,
     };
+  }
+
+  /**
+   * Get human-readable balance string
+   * @example "1.500 Qi"
+   */
+  async getBalanceDisplay(zone: Zone = this.config.defaultZone): Promise<string> {
+    const { balance } = await this.getBalance(zone);
+    return formatBalance(balance);
   }
 
   /**
@@ -203,11 +216,11 @@ export class QiAgentWallet {
   }
 
   /**
-   * Send Qi to a recipient
+   * Send Qi to a recipient (amount in Qit - smallest unit)
    * Automatically handles mailbox notification for new recipients
    * 
    * @param recipientPaymentCode - Recipient's BIP47 payment code
-   * @param amount - Amount in Qi (smallest unit)
+   * @param amount - Amount in Qit (smallest unit). Use parseQi("1.5") for 1.5 Qi.
    * @param originZone - Zone to send from
    * @param destinationZone - Zone to send to (defaults to same as origin)
    */
@@ -254,10 +267,33 @@ export class QiAgentWallet {
   }
 
   /**
+   * Send Qi using human-readable amount
+   * 
+   * @param recipientPaymentCode - Recipient's BIP47 payment code
+   * @param qiAmount - Amount in Qi (e.g., "1.5" or 1.5 for 1.5 Qi)
+   * @param originZone - Zone to send from
+   * @param destinationZone - Zone to send to
+   * 
+   * @example
+   * // Send 1.5 Qi
+   * await wallet.sendQi(recipientPaymentCode, "1.5");
+   * await wallet.sendQi(recipientPaymentCode, 1.5);
+   */
+  async sendQi(
+    recipientPaymentCode: string,
+    qiAmount: string | number,
+    originZone: Zone = this.config.defaultZone,
+    destinationZone: Zone = originZone
+  ): Promise<PaymentSent> {
+    const amount = parseQi(qiAmount);
+    return this.send(recipientPaymentCode, amount, originZone, destinationZone);
+  }
+
+  /**
    * Convert Qi to Quai
    * 
    * @param quaiAddress - Destination Quai address
-   * @param amount - Amount of Qi to convert
+   * @param amount - Amount of Qi to convert (in Qit)
    */
   async convertToQuai(quaiAddress: string, amount: bigint): Promise<string> {
     const txResponse = await this.qiWallet.convertToQuai(quaiAddress, amount);

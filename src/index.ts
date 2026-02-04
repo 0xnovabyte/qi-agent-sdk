@@ -49,6 +49,15 @@ export {
   SenderDiscoveredCallback,
   NETWORK_CONFIGS,
 } from './types';
+export {
+  formatQi,
+  parseQi,
+  formatBalance,
+  getDenominationValue,
+  getDenominationQi,
+  sumDenominations,
+  QI_UNITS,
+} from './utils';
 
 // Re-export useful quais types
-export { Zone, Mnemonic } from 'quais';
+export { Zone, Mnemonic, denominations } from 'quais';
