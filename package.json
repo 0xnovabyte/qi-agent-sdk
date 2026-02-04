@@ -31,10 +31,11 @@
     "url": "https://github.com/dominant-strategies/qi-agent-sdk"
   },
   "dependencies": {
-    "quais": "^1.0.0-alpha.52"
+    "quais": "^1.0.0-alpha.53"
   },
   "devDependencies": {
     "@types/node": "^20.19.30",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "engines": {

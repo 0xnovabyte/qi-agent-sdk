@@ -265,22 +265,28 @@ export class QiAgentWallet {
   }
 
   /**
-   * Sync wallet - scan for UTXOs and discover new senders
+   * Sync wallet - discover senders and scan for UTXOs
+   * Order matters: must open channels with senders BEFORE scanning
    */
   async sync(zone: Zone = this.config.defaultZone): Promise<void> {
     console.log(`Syncing wallet for zone ${zone}...`);
     
-    // Scan for UTXOs
-    await this.qiWallet.scan(zone);
+    // First, check mailbox for new senders and open payment channels
+    // This must happen BEFORE scanning so we know which addresses to check
+    const newSenders = await this.discoverSenders();
+    if (newSenders.length > 0) {
+      console.log(`Discovered ${newSenders.length} new sender(s)`);
+    }
     
-    // Check mailbox for new senders
-    await this.discoverSenders();
+    // Now scan for UTXOs (including from newly opened channels)
+    await this.qiWallet.scan(zone);
     
     console.log('Sync complete');
   }
 
   /**
-   * Discover new senders from mailbox notifications
+   * Discover new senders from mailbox notifications and open payment channels
+   * This is required for BIP47 - must open channel with sender to derive receive addresses
    */
   async discoverSenders(): Promise<string[]> {
     const myPaymentCode = this.getPaymentCode();
@@ -291,6 +297,15 @@ export class QiAgentWallet {
       if (!this.knownSenders.has(senderPC)) {
         this.knownSenders.add(senderPC);
         newSenders.push(senderPC);
+        
+        // Open BIP47 payment channel with this sender
+        // This derives the addresses they will send to
+        try {
+          await this.qiWallet.openChannel(senderPC);
+          console.log(`Opened payment channel with ${senderPC.slice(0, 20)}...`);
+        } catch (err) {
+          console.error(`Failed to open channel with ${senderPC.slice(0, 20)}...:`, err);
+        }
         
         // Notify callbacks
         for (const callback of this.senderCallbacks) {
